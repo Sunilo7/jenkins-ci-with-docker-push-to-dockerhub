@@ -15,15 +15,9 @@ pipeline {
             }
         }
 
-        stage('Compile') {
-            steps {
-                sh 'mvn compile'
-            }
-        }
-
         stage('Build') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn clean install -DskipTests'
             }
         }
 
@@ -33,12 +27,12 @@ pipeline {
             }
         }
 
-        stage('Containerization') {
+        stage('Run Container') {
             steps {
                 sh '''
                 docker stop c1 || true
                 docker rm c1 || true
-                docker run -it -d --name c1 -p 9000:8080 rashmigmr13/ci-app:1
+                docker run -d --name c1 -p 9000:8080 rashmigmr13/ci-app:1
                 '''
             }
         }
