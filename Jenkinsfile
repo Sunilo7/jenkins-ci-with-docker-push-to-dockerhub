@@ -23,7 +23,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t rashmigmr13/ci-app:1 .'
+                sh 'docker build -t rashmidevops1/ci-app:1 .'
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )]) {
+                    sh '''
+                    echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                sh 'docker push rashmidevops1/ci-app:1'
             }
         }
 
@@ -32,7 +52,7 @@ pipeline {
                 sh '''
                 docker stop c1 || true
                 docker rm c1 || true
-                docker run -d --name c1 -p 9000:8080 rashmigmr13/ci-app:1
+                docker run -d --name c1 -p 9000:8080 rashmidevops1/ci-app:1
                 '''
             }
         }
