@@ -6,6 +6,11 @@ pipeline {
         maven 'maven'
     }
 
+    environment {
+        IMAGE_NAME = "sunilresume-app"
+        IMAGE_TAG  = "1"
+    }
+
     stages {
 
         stage('Git Checkout') {
@@ -23,7 +28,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t sunilresume-app:1 .'
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
 
@@ -32,22 +37,31 @@ pipeline {
                 sh '''
                 docker stop c1 || true
                 docker rm c1 || true
-                docker run -d --name c1 -p 9000:8080 sunilresume-app:1
+                docker run -d --name c1 -p 9000:8080 ${IMAGE_NAME}:${IMAGE_TAG}
                 '''
             }
         }
-          stage('Login to Docker Hub') {
-                    steps {
-                        script {
-                            withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                                sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                            }
-                        }
-                    }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-hub-credentials',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                }
+            }
         }
-        stage('Pushing image to repository'){
-            steps{
-                sh 'docker push sunilresume-app:1'
+
+        stage('Tag & Push Image to Docker Hub') {
+            steps {
+                sh '''
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} $DOCKER_USERNAME/${IMAGE_NAME}:${IMAGE_TAG}
+                docker push $DOCKER_USERNAME/${IMAGE_NAME}:${IMAGE_TAG}
+                '''
             }
         }
     }
