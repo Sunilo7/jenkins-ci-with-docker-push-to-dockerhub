@@ -7,9 +7,10 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = "sunilresume-app"
-        IMAGE_TAG  = "1"
-        DOCKER_REPO = "YOUR_DOCKERHUB_USERNAME/sunilresume-app"
+        IMAGE_NAME  = "sunilresume-app"
+        IMAGE_TAG   = "1"
+        DOCKER_USER = "sunilkm1214"
+        DOCKER_REPO = "${DOCKER_USER}/${IMAGE_NAME}"
     }
 
     stages {
@@ -29,17 +30,13 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                """
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
 
         stage('Tag Docker Image') {
             steps {
-                sh """
-                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_REPO}:${IMAGE_TAG}
-                """
+                sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_REPO}:${IMAGE_TAG}"
             }
         }
 
@@ -52,18 +49,14 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    sh """
-                        echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                    """
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
                 }
             }
         }
 
         stage('Push Image to Docker Hub') {
             steps {
-                sh """
-                    docker push ${DOCKER_REPO}:${IMAGE_TAG}
-                """
+                sh "docker push ${DOCKER_REPO}:${IMAGE_TAG}"
             }
         }
 
@@ -72,7 +65,7 @@ pipeline {
                 sh '''
                     docker stop c1 || true
                     docker rm c1 || true
-                    docker run -d --name c1 -p 9000:8080 YOUR_DOCKERHUB_USERNAME/sunilresume-app:1
+                    docker run -d --name c1 -p 9000:8080 sunilkm1214/sunilresume-app:1
                 '''
             }
         }
@@ -83,7 +76,7 @@ pipeline {
             echo "✅ Build, Docker Push & Run completed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed. Check logs."
+            echo "❌ Pipeline failed. Please check the logs."
         }
     }
 }
