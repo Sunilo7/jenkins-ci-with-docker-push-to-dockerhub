@@ -9,6 +9,7 @@ pipeline {
     environment {
         IMAGE_NAME = "sunilresume-app"
         IMAGE_TAG  = "1"
+        DOCKER_REPO = "YOUR_DOCKERHUB_USERNAME/sunilresume-app"
     }
 
     stages {
@@ -20,7 +21,7 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Maven Project') {
             steps {
                 sh 'mvn clean install -DskipTests'
             }
@@ -28,17 +29,17 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
+                sh """
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                """
             }
         }
 
-        stage('Run Container') {
+        stage('Tag Docker Image') {
             steps {
-                sh '''
-                docker stop c1 || true
-                docker rm c1 || true
-                docker run -d --name c1 -p 9000:8080 ${IMAGE_NAME}:${IMAGE_TAG}
-                '''
+                sh """
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_REPO}:${IMAGE_TAG}
+                """
             }
         }
 
@@ -51,18 +52,38 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                    sh """
+                        echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                    """
                 }
             }
         }
 
-        stage('Tag & Push Image to Docker Hub') {
+        stage('Push Image to Docker Hub') {
+            steps {
+                sh """
+                    docker push ${DOCKER_REPO}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage('Run Container') {
             steps {
                 sh '''
-                docker tag ${IMAGE_NAME}:${IMAGE_TAG} $DOCKER_USERNAME/${IMAGE_NAME}:${IMAGE_TAG}
-                docker push $DOCKER_USERNAME/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker stop c1 || true
+                    docker rm c1 || true
+                    docker run -d --name c1 -p 9000:8080 YOUR_DOCKERHUB_USERNAME/sunilresume-app:1
                 '''
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Build, Docker Push & Run completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs."
         }
     }
 }
